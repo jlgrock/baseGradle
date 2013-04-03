@@ -1,0 +1,24 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+apply plugin: 'codenarc'
+
+dependencies {
+	//code quality framework for groovy projects
+	codenarc group: 'org.codenarc', name: 'CodeNarc', version: "${codenarcVersion}"
+}
+
+codenarc {
+	sourceSets = [sourceSets.main, sourceSets.test]
+	configFile = project.rootProject.file("gradle/config/codenarc/codenarc.groovy")
+}
+
+codenarcMain {
+	enabled = true
+	ignoreFailures = false
+}
+
+codenarcTest {
+	enabled = false
+	ignoreFailures = true
+}

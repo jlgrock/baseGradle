@@ -1,0 +1,40 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+apply plugin: 'jdepend'
+
+jdependMain << {
+	File file = new File(jdepend.reportsDir, "main.xml");
+	assert file.exists() && file.isFile(), "File '$file' must exist"
+  
+	def numberOfCycles = new XmlSlurper().parse(file).Cycles.Package.size()
+	assert numberOfCycles == 0, """We have detected $numberOfCycles cycles. Checkout report file: $file.
+                                    """
+}
+
+class JDependStyleReportConverter implements TaskExecutionListener {
+	def ant
+	def inLoc
+	File styleFile
+	File outFile
+	
+	@Override
+	void beforeExecute(Task task) {
+	}
+	
+	@Override
+	void afterExecute(Task tsk, TaskState state) {
+		if (tsk.name == 'jdependMain') {
+			ant.xslt(in: inLoc, style: styleFile, out: outFile)
+		}
+	}
+}
+
+def jDependStyleReportConverter = new JDependStyleReportConverter (
+	ant: ant,
+	inLoc: new File(jdepend.reportsDir, "main.xml"),
+	styleFile: project.rootProject.file("gradle/config/jdepend/jdepend.xsl"),
+	outFile: new File(jdependMain.reports.xml.destination.parent, 'main.html')
+)
+
+gradle.addListener jDependStyleReportConverter

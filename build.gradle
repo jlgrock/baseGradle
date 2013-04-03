@@ -1,0 +1,90 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+//define global variables
+version = "${projVersion}"
+group = 'org.goss.mondo'
+ext.isSnapshot = version.endsWith("-SNAPSHOT")
+
+
+
+//configurations.compile.transitive = true  // Make sure transitive project dependencies are resolved.
+
+//apply buildscript dependencies to the project as a whole
+buildscript {
+	repositories {
+		mavenCentral()
+		mavenRepo name: 'Bintray', url: 'http://dl.bintray.com/content/aalmiray/kordamp'
+	}
+	dependencies {
+		classpath "org.kordamp:markdown-gradle-plugin:${markdownPluginVersion}"
+	}
+}
+
+//plugins for updating IDE.
+apply plugin: 'eclipse'
+
+//alows for conversion of markdown to PDF.
+apply from: "$rootProject.projectDir/gradle/extensions/markdown.gradle"
+
+//Define how wrapper is used.  This allows you to create a batch file/shell script using 'gradle createWrapper'
+//that can be checked in to your SCM so that machines that do not have gradle installed can execute
+//the build.
+task wrapper(type: Wrapper) {
+	gradleVersion = "${gradleVersion}"
+}
+
+//apply plugins that apply to the project as a whole.
+apply from: "$rootProject.projectDir/gradle/extensions/announce.gradle"
+apply from: "$rootProject.projectDir/gradle/extensions/sonar.gradle"
+apply from: "$rootProject.projectDir/gradle/extensions/wrapper.gradle"
+
+//execute this for every (sub)Project
+allprojects {
+	version = "${projVersion}"
+	group = 'org.goss.mondo'
+	//define the default tasks if the user just types 'gradle' on the command line
+	defaultTasks 'clean', 'check', 'install'
+	
+	//execute the following if the project is a groovy project or a java project, which
+	//is defined by containing the project defining the properties javaProject=true
+	//and groovyProject=true, respectively
+	//check the property to see if it should use the groovy tools
+	if (project.hasProperty("groovyProject") && Boolean.valueOf(project.groovyProject)) {
+		println "groovy project: " + project.name
+		apply from: "$rootProject.projectDir/gradle/extensions/groovy.gradle"
+		sourceSets.main.java.srcDirs = ['src/main/java'] 
+		sourceSets.main.groovy.srcDirs = ['src/main/groovy'] 
+		sourceSets.test.java.srcDirs = ['src/test/java']  
+		sourceSets.test.groovy.srcDirs = ['src/test/groovy'] 	
+	} else if (project.hasProperty("javaProject") && Boolean.valueOf(project.javaProject)) {
+		println "java project: " + project.name
+		apply from: "$rootProject.projectDir/gradle/extensions/java.gradle"
+		sourceSets.main.java.srcDirs = ['src/main/java'] 
+		sourceSets.main.groovy.srcDirs = ['src/main/groovy'] 
+		sourceSets.test.java.srcDirs = ['src/test/java'] 
+		sourceSets.test.groovy.srcDirs = ['src/test/groovy'] 
+	}
+}
+
+//Define project adjustments for the subdir1 subproject
+project(':subdir1') {
+	dependencies {
+		
+	}
+}
+
+//Define project dependencies for the subdir2-1 subproject
+project(':subdir2:subdir2-1') {
+	dependencies {
+		compile project(':subdir1')
+	}
+}
+
+//Define project dependencies for th mondo-ehcache-connector subproject
+project(':subdir2:subdir2-2') {
+	dependencies {
+		compile project(':subdir1')
+	}
+}
+

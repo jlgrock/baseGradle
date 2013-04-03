@@ -1,0 +1,102 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+apply plugin: 'maven'
+//apply plugin : 'signing'
+	
+ext.optionalDeps = []
+ext.providedDeps = []
+	
+ext.optional = { optionalDeps << it }
+ext.provided = { providedDeps << it }
+	
+//Add maven central to all projects
+repositories {
+	if (project.hasProperty('useMavenLocal') && Boolean.valueOf(project.useMavenLocal)) {
+		mavenLocal()
+	}
+	mavenCentral()
+}
+
+
+def customizePom(pom, gradleProject) {
+	
+	pom.whenConfigured { generatedPom ->
+		// respect 'optional' and 'provided' dependencies
+		gradleProject.optionalDeps.each { dep ->
+			generatedPom.dependencies.find { it.artifactId == dep.name }?.optional = true
+		}
+		gradleProject.providedDeps.each { dep ->
+			generatedPom.dependencies.find { it.artifactId == dep.name }?.scope = 'provided'
+		}
+
+		// eliminate test-scoped dependencies (no need in maven central poms)
+		generatedPom.dependencies.removeAll { dep ->
+			dep.scope == 'test'
+		}
+
+		// add all items necessary for maven central publication
+		generatedPom.project {
+			name = gradleProject.name
+			description = gradleProject.name
+			version = project.version
+			url = '${myProjectUrl}'
+
+			organization {
+				name = 'MyCompany'
+				url = 'http://www.mycompany.com'
+			}
+
+			licenses {
+				license {
+					name = 'MIT License'
+					url = 'http://www.opensource.org/licenses/mit-license.php'
+					distribution = 'repo'
+				}
+			}
+			
+			scm {
+				url = "${scmUrl}"
+				connection = 'scm:git:${scmUrl}'
+				developerConnection = 'scm:git:${scmUrl}'
+			}
+			
+			issueManagement {
+				url = "${issueManagementUrl}"
+				system = 'JIRA'
+			}
+			
+		}
+	}
+}
+
+configure(install.repositories.mavenInstaller) {
+	customizePom(pom, project)
+}
+
+task checkServerProperties << {
+	if (project.properties['repositoryUsername'] == null || project.properties['repositoryPassword'] == null) {
+		throw new IllegalStateException("ERROR: you need to have repositoryUsername and repositoryPassword properties" +
+										" defined in your USER_HOME/.gradle/gradle.properties file to upload archives");
+	}
+}
+
+//signing {
+//	required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives") }
+//	sign configurations.archives
+//}
+
+uploadArchives() {
+	dependsOn checkServerProperties
+	repositories {
+		mavenDeployer {
+			//beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+			repository(url: '${releaseRepositoryUrl}') {
+				authentication(userName: project.properties['repositoryUsername'], password: project.properties['repositoryPassword'])
+			}
+			snapshotRepository(url: '${snapshotRepositoryUrl}') {
+				authentication(userName: project.properties['repositoryUsername'], password: project.properties['repositoryPassword'])
+			}
+		}
+	}
+}

@@ -1,0 +1,6 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+task createWrapper(type: Wrapper) {
+	gradleVersion = "${gradleVersion}"
+}

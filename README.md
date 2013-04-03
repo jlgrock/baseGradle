@@ -24,4 +24,4 @@ I am still working on integration with Sonar for all projects.  Checkstyle, Cobe
 # More...
 If you have any additions or optimizations to my code, just send me a pull request!
 
-- Justin G
+-Justin G

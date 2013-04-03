@@ -1,0 +1,8 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+//define subprojects
+include 'subdir1',
+	'subdir2:subdir2-1', 
+	'subdir2:subdir2-2'
+

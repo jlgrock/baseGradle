@@ -1,0 +1,39 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+// Should be applied at the top level, as multiproject builds can be collated and will save resources
+// This task should only be set up to run about once a day
+
+apply plugin: "sonar"
+
+sonar {
+	server {
+		url = "${sonarBaseName}"
+	}
+	database {
+		url = "jdbc:${sonarDbName}?useUnicode=true&amp;characterEncoding=utf8"
+		driverClassName = "com.mysql.jdbc.Driver"
+		username = "sonar"
+		password = "sonar"
+	}
+}
+
+allprojects {
+	sonar {
+		project {
+			sourceEncoding = "UTF-8"
+			if (project.hasProperty("groovyProject") && Boolean.valueOf(project.groovyProject)) {
+				language = "groovy"
+			} else if (project.hasProperty("javaProject") && Boolean.valueOf(project.javaProject)) {
+				language = "java"
+			}
+		}
+	}
+}
+//project.coberturaReportPath = file("$buildDir/reports/cobertura.xml")
+//
+//sonar {
+//	project {
+//		cloverReportPath = file("$reportsDir/clover/clover.xml")
+//	}
+//}

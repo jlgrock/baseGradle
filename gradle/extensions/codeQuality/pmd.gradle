@@ -1,0 +1,9 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+apply plugin: 'pmd'
+
+pmdMain {
+	ignoreFailures = false
+	ruleSetFiles = project.rootProject.files("gradle/config/pmd/ruleSet.xml")
+}

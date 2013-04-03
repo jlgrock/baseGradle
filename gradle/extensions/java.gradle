@@ -1,0 +1,55 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+//Set up all shared project settings for java projects
+apply plugin: 'groovy'
+apply from: "$rootProject.projectDir/gradle/extensions/maven.gradle"
+apply from: "$rootProject.projectDir/gradle/extensions/codeQuality/checkstyle.gradle"
+apply from: "$rootProject.projectDir/gradle/extensions/codeQuality/pmd.gradle"
+apply from: "$rootProject.projectDir/gradle/extensions/codeQuality/findbugs.gradle"
+apply from: "$rootProject.projectDir/gradle/extensions/codeQuality/jdepend.gradle"
+apply from: "$rootProject.projectDir/gradle/extensions/codeQuality/jacoco.gradle"
+
+//set source/target Java compatibilities
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+dependencies {
+	// This is the groovy-all (rather than just "groovy")
+	// due to a bug http://issues.gradle.org/browse/GRADLE-1803
+	groovy group: 'org.codehaus.groovy', name: 'groovy-all', version: "${groovyVersion}"
+
+	//Testing framework for groovy projects
+	//This is the only version of spock available for groovy 2+.  Change to final release.
+	testCompile group: 'org.spockframework', name: 'spock-core', version: "${spockVersion}"
+
+	//compile artifacts that will be used for every groovy project
+	compile group: 'org.slf4j', name: 'slf4j-api', version: "${slf4jVersion}"
+}
+
+task checkJavaVersion << {
+	if (!JavaVersion.current().isJava7()) {
+		String message = "ERROR: Java 1.7 required but " +
+						 JavaVersion.current() +
+						 " found. Change your JAVA_HOME environment variable.";
+		throw new IllegalStateException(message);
+	}
+}
+
+compileJava.dependsOn checkJavaVersion
+
+task javaSourceArchive(type: Jar) {
+	description = 'Create an archive of the source code for Maven Central'
+	classifier = 'sources'
+	from sourceSets.main.java
+}
+
+task javaDocArchive(type: Jar, dependsOn: 'javadoc') {
+	description = 'Create an archive of the JavaDocs for Maven Central'
+	group = 'documentation'
+	classifier = 'javadoc'
+	from javadoc
+}
+
+artifacts { archives jar, javaDocArchive, javaSourceArchive }
+		

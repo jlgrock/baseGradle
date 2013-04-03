@@ -1,0 +1,31 @@
+apply plugin: 'clover'
+
+dependencies {
+    clover 'com.cenqua.clover:clover:3.1.10'
+}
+
+clover {
+	//classesDir
+	//classesBackupDir = file("${sourceSets.main.classesDir}-backup")
+	licenseLocation = 'clover-license.txt'
+	excludes = ['**/SynchronizedMultiValueMap.java']
+	targetPercentage = '85%'
+
+	contexts {
+		statement {
+			name = 'log'
+			regexp = '^.*LOG\\..*'
+		}
+
+		method {
+			name = 'main'
+			regexp = 'public static void main\\(String args\\[\\]\\).*'
+		}
+	}
+
+	report {
+		html = true
+		pdf = true
+		filter = 'log,if,else'
+	}
+}

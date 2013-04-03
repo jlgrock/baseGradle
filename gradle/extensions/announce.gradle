@@ -1,0 +1,42 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+apply plugin: 'announce'
+apply plugin: 'build-announcements'
+
+gradle.taskGraph.addTaskExecutionListener new TaskAnnouncer(localAnnouncer: announce.local)
+
+//Uncomment and provide twitter login for twitter pushes
+//announce {
+//	username = 'myId'
+//	password = 'myPassword'
+//  }
+//gradle.taskGraph.addTaskExecutionListener new TaskAnnouncer(localAnnouncer: announce.twitter)
+
+class TaskAnnouncer implements TaskExecutionListener {
+	Announcer localAnnouncer
+
+	@Override
+	void afterExecute(final Task task, final TaskState state) {
+		if (task.project == task.project.rootProject) {
+			String message
+			if (state.failure) {
+				message = "Failure: $state.failure.message"
+			} else if (state.executed) {
+				message = 'Done'
+			} else if (state.skipped) {
+				message = "Skipped: $state.skipMessage"
+			}
+			send task, message
+		}
+	}
+
+	@Override
+	void beforeExecute(final Task task) {
+	}
+
+	private void send(final Task task, final String message) {
+		final String title = "Gradle build: $task.project.name:$task.name"
+		localAnnouncer.send title, message
+	}
+}

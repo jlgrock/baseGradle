@@ -1,0 +1,97 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+//Set up all shared project settings for groovy projects
+
+apply plugin: 'groovy'
+apply from: "$rootProject.projectDir/gradle/extensions/codeQuality/codenarc.gradle"
+apply from: "$rootProject.projectDir/gradle/extensions/maven.gradle"
+
+//set source/target Java compatibilities
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+task checkJavaVersion << {
+	if (!JavaVersion.current().isJava7()) {
+		String message = "ERROR: Java 1.7 required but " +
+				JavaVersion.current() +
+				" found. Change your JAVA_HOME environment variable.";
+		throw new IllegalStateException(message);
+	}
+}
+
+compileJava.dependsOn checkJavaVersion
+
+task groovySourceArchive(type: Jar) {
+	description = "Create an archive of the source code for Maven Central"
+	classifier = 'sources'
+	from sourceSets.main.groovy
+}
+
+task groovyDocArchive(type: Jar, dependsOn: 'groovydoc') {
+	description = 'Create an archive of the GroovyDocs for Maven Central'
+	group = 'documentation'
+	classifier = 'javadoc'
+	from groovydoc.destinationDir
+}
+
+sourceSets {
+	sharedTest {
+		compileClasspath = main.output + compileClasspath
+		runtimeClasspath = output + compileClasspath + runtimeClasspath
+	}
+	[test, integrationTest].each {
+		it.compileClasspath = sharedTest.output + sharedTest.compileClasspath + it.compileClasspath
+		it.runtimeClasspath = it.output + it.compileClasspath + it.runtimeClasspath
+	}
+	integrationTest {
+		groovy {
+			srcDirs = ['src/integrationTest/groovy']
+		}
+	}
+}
+
+configurations {
+	testCompile.extendsFrom sharedTestCompile
+	testRuntime.extendsFrom sharedTestRuntime
+	integrationTestCompile.extendsFrom compile, sharedTestCompile
+	integrationTestRuntime.extendsFrom runtime, sharedTestRuntime
+}
+
+compileIntegrationTestJava {
+	classpath += sourceSets.main.output
+}
+
+compileIntegrationTestGroovy {
+	classpath = compileIntegrationTestJava.classpath
+}
+
+task integrationTest(type: Test) {
+	description = 'Runs the integration tests.'
+	group = 'verification'
+	dependsOn integrationTestClasses
+	classpath = sourceSets.integrationTest.runtimeClasspath + sourceSets.main.output
+	testClassesDir = sourceSets.integrationTest.output.classesDir
+	testReportDir = new File("$project.reporting.baseDir", 'integrationTests')
+	testResultsDir = new File("$project.buildDir", 'integrationTest-results')
+	testSrcDirs = (sourceSets.integrationTest.java.srcDirs + sourceSets.integrationTest.groovy.srcDirs).asList()
+}
+check.dependsOn integrationTest
+
+dependencies {
+	// This is the groovy-all (rather than just "groovy")
+	// due to a bug http://issues.gradle.org/browse/GRADLE-1803
+	groovy group: 'org.codehaus.groovy', name: 'groovy-all', version: "${groovyVersion}"
+
+	//Testing framework for groovy projects
+	//This is the only version of spock available for groovy 2+.  Change to final release.
+	sharedTestCompile (
+			[group: 'org.codehaus.groovy', name: 'groovy-all', version: "${groovyVersion}"],
+			[group: 'org.spockframework', name: 'spock-core', version: "${spockVersion}"]
+	)
+
+	//compile artifacts that will be used for every groovy project
+	compile group: 'org.slf4j', name: 'slf4j-api', version: "${slf4jVersion}"
+}
+
+artifacts { archives jar, groovyDocArchive, groovySourceArchive }

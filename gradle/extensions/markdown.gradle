@@ -1,0 +1,56 @@
+import com.petebevin.markdown.MarkdownProcessor
+import org.xhtmlrenderer.pdf.ITextRenderer
+import org.ccil.cowan.tagsoup.Parser
+import org.apache.xalan.xsltc.trax.SAX2DOM
+import org.xml.sax.InputSource
+ 
+buildscript {
+	repositories {
+		mavenCentral()
+
+		//for markdown to HTML plugin 
+		mavenRepo name: 'Bintray', url: 'http://dl.bintray.com/content/aalmiray/kordamp'
+	}
+	dependencies {
+		//for markdown to HTML plugin 
+		classpath "org.kordamp:markdown-gradle-plugin:${markdownPluginVersion}"
+		
+		//for pdf conversion
+		classpath "org.markdownj:markdownj:${markdownjVersion}"
+		classpath "org.ccil.cowan.tagsoup:tagsoup:${tagsoupVersion}"
+		classpath "org.xhtmlrenderer:core-renderer:${xhtmlrendererVersion}"
+		classpath "xalan:xalan:${xalanVersion}"
+	}
+}
+
+//Plugin will convert everything in the src/markdown directory to HTML when using the 'markdownToHtml' task
+apply plugin: 'markdown'
+
+//markdown {
+//	source='src/markdown'
+//	autoLinks = true
+//	baseUri = 'http://example.com'
+//}
+
+//This section will convert the README markdown file to a PDF
+task build << {
+  def source = "README.md"
+  def target = "./build/README.pdf"
+ 
+  //Convert from markdown to html
+  def mp = new MarkdownProcessor()
+  def html = "<html><body>${mp.markdown((new File(source).text))}</body></html>"
+  
+  //Convert from html to w3c document
+  def parser = new Parser()
+  def sax2dom = new SAX2DOM()
+  parser.setContentHandler(sax2dom);
+  parser.setFeature(Parser.namespacesFeature, false);
+  parser.parse(new InputSource(new ByteArrayInputStream(html.getBytes())));
+  
+  //Use Document to create pdf
+  ITextRenderer renderer = new ITextRenderer();
+  renderer.setDocument(sax2dom.getDOM(), null);
+  renderer.layout();
+  renderer.createPDF((new File(target).newOutputStream()))
+}

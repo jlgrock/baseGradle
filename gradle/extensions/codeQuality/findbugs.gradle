@@ -1,0 +1,9 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+apply plugin: 'findbugs'
+
+findbugsMain {
+	reports.xml.enabled = false
+	reports.html.enabled = true
+}

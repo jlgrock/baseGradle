@@ -1,0 +1,39 @@
+#!groovy
+// The above triggers groovy syntax highlighting in vim
+
+apply plugin: 'checkstyle'
+
+checkstyle {
+	sourceSets = [sourceSets.main]
+}
+
+checkstyleMain {
+	ignoreFailures=false
+	configFile = project.rootProject.file("gradle/config/checkstyle/checkstyle.xml")
+}
+
+class CheckStyleReportConverter implements TaskExecutionListener {
+	def ant
+	def inLoc
+	File styleFile
+	File outFile
+	
+	@Override
+	void beforeExecute(Task task) {
+	}
+	
+	@Override
+	void afterExecute(Task tsk, TaskState state) {
+		if (tsk.name == 'checkstyleMain') {
+			ant.xslt(in: inLoc, style: styleFile, out: outFile)
+		}
+	}
+}
+
+def checkStyleReportConverter = new CheckStyleReportConverter (
+	ant: ant,
+	inLoc: checkstyleMain.reports.xml.destination,
+	styleFile: project.rootProject.file("gradle/config/checkstyle/checkstyle-noframes-sorted.xsl"),
+	outFile: new File(checkstyleMain.reports.xml.destination.parent, 'main.html')
+)
+gradle.addListener checkStyleReportConverter
