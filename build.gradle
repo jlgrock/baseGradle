@@ -36,9 +36,10 @@ task wrapper(type: Wrapper) {
 
 //apply plugins that apply to the project as a whole.
 apply from: "$rootProject.projectDir/gradle/extensions/announce.gradle"
-apply from: "$rootProject.projectDir/gradle/extensions/sonar.gradle"
 apply from: "$rootProject.projectDir/gradle/extensions/wrapper.gradle"
-
+if (project.hasProperty("sonarBaseName")) {
+	apply from: "$rootProject.projectDir/gradle/extensions/sonar.gradle"
+}
 //execute this for every (sub)Project
 allprojects {
 	version = "${projVersion}"
