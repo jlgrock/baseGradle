@@ -23,7 +23,7 @@ allprojects {
 		project {
 			sourceEncoding = "UTF-8"
 			if (project.hasProperty("groovyProject") && Boolean.valueOf(project.groovyProject)) {
-				language = "groovy"
+				language = "grvy"
 			} else if (project.hasProperty("javaProject") && Boolean.valueOf(project.javaProject)) {
 				language = "java"
 			}
