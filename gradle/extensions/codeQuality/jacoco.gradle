@@ -89,8 +89,18 @@ test {
 			structure(name: project.name) {
 				classfiles { fileset dir: "${sourceSets.main.output.classesDir}" }
 				sourcefiles {
-					sourceSets.main.java.srcDirs.each {
-						fileset(dir: it.absolutePath)
+					if (sourceSets.main?.groovy?.srcDirs != null) {
+						sourceSets.main.groovy.srcDirs.each {
+							if (it.exists()) {
+								fileset(dir: it.absolutePath)
+							}
+						}
+					} else if (sourceSets.main?.java?.srcDirs != null) {
+						sourceSets.main.java.srcDirs.each {
+							if (it.exists()) {
+								fileset(dir: it.absolutePath)
+							}
+						}
 					}
 				}
 			}
