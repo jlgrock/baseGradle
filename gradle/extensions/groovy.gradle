@@ -22,13 +22,17 @@ task checkJavaVersion << {
 
 compileJava.dependsOn checkJavaVersion
 
-task groovySourceArchive(type: Jar) {
+task sourceArchive(type: Jar) {
 	description = "Create an archive of the source code for Maven Central"
 	classifier = 'sources'
-	from sourceSets.main.groovy
+	from sourceSets.main.java, sourceSets.main.groovy
 }
 
-task groovyDocArchive(type: Jar, dependsOn: 'groovydoc') {
+groovydoc {
+	source = [sourceSets.main.java, sourceSets.main.groovy]
+}
+
+task docArchive(type: Jar, dependsOn: 'groovydoc') {
 	description = 'Create an archive of the GroovyDocs for Maven Central'
 	group = 'documentation'
 	classifier = 'javadoc'
@@ -94,4 +98,4 @@ dependencies {
 	compile group: 'org.slf4j', name: 'slf4j-api', version: "${slf4jVersion}"
 }
 
-artifacts { archives jar, groovyDocArchive, groovySourceArchive }
+artifacts { archives jar, docArchive, sourceArchive }
